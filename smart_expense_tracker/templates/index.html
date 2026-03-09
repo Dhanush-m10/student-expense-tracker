@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Student Expense Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Chart.js for charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fa-solid fa-wallet"></i>
+                <h2>SmartTrack</h2>
+            </div>
+            <nav>
+                <a href="#" class="active"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+                <a href="#"><i class="fa-solid fa-receipt"></i> Transactions</a>
+                <a href="#"><i class="fa-solid fa-bullseye"></i> Budget Goals</a>
+                <a href="#"><i class="fa-solid fa-gear"></i> Settings</a>
+            </nav>
+            <div class="user-profile">
+                <img src="https://ui-avatars.com/api/?name=Student+User&background=random" alt="User Profile">
+                <div>
+                    <p class="name">Student</p>
+                    <p class="status">Premium Plan</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="top-nav">
+                <div class="page-title">
+                    <h1>Dashboard</h1>
+                    <p>Track. Analyze. Save.</p>
+                </div>
+                <div class="actions">
+                    <button class="btn-icon"><i class="fa-regular fa-bell"></i></button>
+                    <button class="btn-primary" onclick="toggleExpenseModal()">+ New Expense</button>
+                </div>
+            </header>
+
+            <div id="budget-warning" class="alert alert-warning hidden">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <div class="alert-content">
+                    <strong>Warning:</strong> You have exceeded your monthly budget of $<span id="budget-limit-display">500</span>!
+                </div>
+                <button class="close-alert" onclick="this.parentElement.classList.add('hidden')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Stats Overview -->
+            <section class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon bg-blue"><i class="fa-solid fa-money-bill-transfer"></i></div>
+                    <div class="stat-info">
+                        <h3>Total Spent</h3>
+                        <h2 id="total-spending">$0.00</h2>
+                        <p class="trend positive"><i class="fa-solid fa-arrow-trend-down"></i> 12% vs last month</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon bg-purple"><i class="fa-solid fa-piggy-bank"></i></div>
+                    <div class="stat-info">
+                        <h3>Remaining Budget</h3>
+                        <h2 id="remaining-budget">$500.00</h2>
+                        <p class="trend neutral">Out of $500.00 total</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon bg-orange"><i class="fa-solid fa-utensils"></i></div>
+                    <div class="stat-info">
+                        <h3>Top Category</h3>
+                        <h2 id="top-category">-</h2>
+                        <p class="trend negative" id="top-category-amount">$0.00 spent</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Dashboard Modules layout -->
+            <div class="dashboard-layout">
+                <!-- Recent Expenses Table -->
+                <section class="transactions-module module">
+                    <div class="module-header">
+                        <h3>Recent Expenses</h3>
+                        <a href="#" class="view-all">View All</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="expenses-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Expense Name</th>
+                                    <th>Category</th>
+                                    <th>Amount</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expenses-list">
+                                <!-- Expenses will be loaded here via JS -->
+                            </tbody>
+                        </table>
+                        <div id="empty-state" class="empty-state hidden">
+                            <i class="fa-solid fa-receipt"></i>
+                            <p>No expenses found. Add one to get started!</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Spending by Category Chart -->
+                <section class="chart-module module">
+                    <div class="module-header">
+                        <h3>Spending Breakdown</h3>
+                        <select class="filter-select">
+                            <option>This Month</option>
+                            <option>Last Month</option>
+                        </select>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Expense Modal -->
+    <div id="expense-modal" class="modal hidden">
+        <div class="modal-overlay" onclick="toggleExpenseModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Expense</h2>
+                <button class="close-modal" onclick="toggleExpenseModal()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="expense-form">
+                <div class="form-group">
+                    <label for="name">What did you buy?</label>
+                    <input type="text" id="name" placeholder="e.g. Campus Coffee" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="amount">Amount ($)</label>
+                        <div class="input-icon">
+                            <i>$</i>
+                            <input type="number" id="amount" step="0.01" min="0.01" placeholder="0.00" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="date">Date</label>
+                        <input type="date" id="date" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select id="category" required>
+                        <option value="" disabled selected>Select a category</option>
+                        <option value="Food">🍽️ Food & Dining</option>
+                        <option value="Travel">🚗 Transportation</option>
+                        <option value="Shopping">🛍️ Shopping</option>
+                        <option value="Entertainment">🎬 Entertainment</option>
+                        <option value="Education">📚 Education</option>
+                        <option value="Other">✨ Other</option>
+                    </select>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="toggleExpenseModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Expense</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
